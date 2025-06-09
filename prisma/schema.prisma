@@ -1,0 +1,62 @@
+
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+    provider = "prisma-client-js"
+    binaryTargets = ["native", "linux-musl-arm64-openssl-3.0.x"]
+    output = "/home/ubuntu/ai-prompt-manager/node_modules/.prisma/client"
+}
+
+datasource db {
+    provider = "postgresql"
+    url      = env("DATABASE_URL")
+}
+
+model CidiComponent {
+  id          String   @id @default(cuid())
+  type        ComponentType
+  title       String
+  content     String   @db.Text
+  category    String?
+  tags        String[] @default([])
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  contextPrompts      AssembledPrompt[] @relation("ContextComponent")
+  instructionsPrompts AssembledPrompt[] @relation("InstructionsComponent")
+  detailsPrompts      AssembledPrompt[] @relation("DetailsComponent")
+  inputPrompts        AssembledPrompt[] @relation("InputComponent")
+
+  @@map("cidi_components")
+}
+
+model AssembledPrompt {
+  id              String   @id @default(cuid())
+  name            String
+  finalPromptText String   @db.Text
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  // Component references
+  contextId      String?
+  instructionsId String?
+  detailsId      String?
+  inputId        String?
+
+  // Relations
+  context      CidiComponent? @relation("ContextComponent", fields: [contextId], references: [id])
+  instructions CidiComponent? @relation("InstructionsComponent", fields: [instructionsId], references: [id])
+  details      CidiComponent? @relation("DetailsComponent", fields: [detailsId], references: [id])
+  input        CidiComponent? @relation("InputComponent", fields: [inputId], references: [id])
+
+  @@map("assembled_prompts")
+}
+
+enum ComponentType {
+  CONTEXT
+  INSTRUCTIONS
+  DETAILS
+  INPUT
+}
